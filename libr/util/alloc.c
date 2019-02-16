@@ -1,6 +1,31 @@
-/* radare - LGPL - Copyright 2018 - pancake */
+/* radare - LGPL - Copyright 2019 - pancake */
 
+#include <r_util.h>
 #include <r_util/r_alloc.h>
+
+R_API void r_alloc_init () {
+#if R_MALLOC_WRAPPER
+	r_alloc_hooks (malloc, calloc, realloc, free);
+#endif
+}
+
+#if R_MALLOC_WRAPPER
+
+#if R_MALLOC_GLOBAL
+R_API RMalloc *r_malloc = malloc;
+R_API RCalloc *r_calloc = calloc;
+R_API RRealloc *r_realloc = realloc;
+R_API RFree *r_free = free;
+
+R_API void r_alloc_hooks(RMalloc m, RCalloc c, RRealloc r, RFree f) {
+	r_return_if_fail (m && c && r && f);
+	r_malloc = m;
+	r_calloc = c;
+	r_realloc = r;
+	r_free = f;
+}
+
+#else
 
 static RMalloc *_r_malloc = malloc;
 static RCalloc *_r_calloc = calloc;
@@ -15,16 +40,12 @@ R_API void r_alloc_hooks(RMalloc m, RCalloc c, RRealloc r, RFree f) {
 	_r_free = f;
 }
 
-R_API void r_alloc_init () {
-	r_alloc_hooks (malloc, calloc, realloc, free);
-}
-
 R_API void *r_malloc(size_t sz) {
 	return _r_malloc (sz);
 }
 
 R_API void *r_calloc(size_t count, size_t sz) {
-	return _r_calloc (sz);
+	return _r_calloc (count, sz);
 }
 
 R_API void *r_realloc(void *p, size_t sz) {
@@ -34,6 +55,8 @@ R_API void *r_realloc(void *p, size_t sz) {
 R_API void r_free(void *p) {
 	return _r_free (p);
 }
+#endif
+#endif
 
 R_API void* r_malloc_aligned(size_t size, size_t alignment) {
 	int offset = alignment - 1 + sizeof(void*);
