@@ -34,3 +34,18 @@ R_API void *r_realloc(void *p, size_t sz) {
 R_API void r_free(void *p) {
 	return _r_free (p);
 }
+
+R_API void* r_malloc_aligned(size_t size, size_t alignment) {
+	int offset = alignment - 1 + sizeof(void*);
+	void* p1 = _r_malloc (size + offset);
+	if (!p1) {
+		return NULL;
+	}
+	void **p2 = (void**)(((size_t)(p1) + offset) & ~(alignment - 1));
+	p2[-1] = p1;
+	return p2;
+}
+
+R_API void r_free_aligned(void *p) {
+	_r_free (((void**)p)[-1]);
+}
